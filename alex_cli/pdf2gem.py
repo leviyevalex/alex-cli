@@ -5,6 +5,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 import google.generativeai as genai
 from cyclopts import App
+import subprocess
+import tempfile
 
 # --- Load API key ---
 load_dotenv()
@@ -72,15 +74,23 @@ def pdf2gemini(
     print(f"[1/1] Sending PDF to Gemini with prompt...")
     response = send_to_gemini(final_prompt, pdf_path)
 
-    # Save response
-    output_path = pdf_path.with_name(pdf_path.stem + "_output.txt")
-    with open(output_path, "w") as f:
-        f.write(response)
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False, suffix=".txt") as tmp:
+        tmp.write(response)
+        tmp.flush()
+        subprocess.run(["vim", tmp.name])
 
-    print(f"✅ Response saved to: '{output_path}'")
-    print("\n===== MODEL RESPONSE =====")
-    print(response)
-    print("==========================")
+    # Open the response in Vim temporarily
+    # subprocess.run(["vim", "-"], input=response.encode("utf-8"))
+
+    # # Save response
+    # output_path = pdf_path.with_name(pdf_path.stem + "_output.txt")
+    # with open(output_path, "w") as f:
+    #     f.write(response)
+
+    # print(f"✅ Response saved to: '{output_path}'")
+    # print("\n===== MODEL RESPONSE =====")
+    # print(response)
+    # print("==========================")
 
 if __name__ == "__main__":
     app()
