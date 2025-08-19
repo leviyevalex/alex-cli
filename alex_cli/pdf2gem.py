@@ -1,18 +1,37 @@
 #!/usr/bin/env python3
 import os
 import sys
-import argparse
 from pathlib import Path
 from dotenv import load_dotenv
 import google.generativeai as genai
+from cyclopts import App
 
 # --- Load API key ---
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
+app = App(name="pdf2gem")
+
+# Hardcoded contexts
+MARKDOWN_CONTEXT = """
+You are an expert in converting handwritten notes into clean, well-structured Obsidian markdown.
+- Use markdown headers (#, ##, ###) appropriately.
+- Format equations with inline $...$ or block $$...$$.
+- Use lists, bullet points, and code blocks when appropriate.
+- Keep it concise and readable for study purposes.
+"""
+
+LATEX_CONTEXT = """
+You are an expert in converting handwritten notes into clean, well-structured LaTeX.
+- Use proper LaTeX math mode for equations.
+- Use \\section, \\subsection, and \\subsubsection for structure.
+- Use itemize/enumerate environments for lists.
+- Output should be valid standalone LaTeX source.
+"""
+
 def send_to_gemini(prompt: str, pdf_path: Path):
     """
-    Send prompt + optional PDF to Gemini LLM.
+    Send prompt + PDF to Gemini LLM.
     """
     model = genai.GenerativeModel(model_name="gemini-2.5-flash-lite")
     content = [prompt]
@@ -27,30 +46,28 @@ def send_to_gemini(prompt: str, pdf_path: Path):
     response = model.generate_content(content)
     return response.text.strip()
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Send PDF + prompt (with optional context.txt) to Gemini LLM"
-    )
-    parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
-    parser.add_argument("prompt", type=str, help="Prompt/query for the LLM")
-    parser.add_argument("-c", "--context", action="store_true",
-                        help="Use context.txt if available")
 
-    args = parser.parse_args()
-    pdf_path = Path(args.pdf_path)
+@app.default
+def pdf2gemini(
+    pdf_path: Path,
+    prompt: str,
+    md: bool = False,
+    latex: bool = False,
+):
+    """
+    Send PDF + prompt (with optional markdown/latex context) to Gemini LLM.
+    """
 
     if not pdf_path.exists() or pdf_path.suffix.lower() != ".pdf":
-        print("Error: Please provide a valid PDF file.")
+        print("❌ Error: Please provide a valid PDF file.")
         sys.exit(1)
 
-    final_prompt = args.prompt
-    if args.context:
-        context_file = Path("context.txt")
-        if context_file.exists():
-            context = context_file.read_text()
-            final_prompt = f"{context}\n\n{args.prompt}"
-        else:
-            print("Warning: context.txt not found, proceeding without it.")
+    # Apply context if requested
+    final_prompt = prompt
+    if md:
+        final_prompt = f"{MARKDOWN_CONTEXT}\n\n{prompt}"
+    elif latex:
+        final_prompt = f"{LATEX_CONTEXT}\n\n{prompt}"
 
     print(f"[1/1] Sending PDF to Gemini with prompt...")
     response = send_to_gemini(final_prompt, pdf_path)
@@ -66,4 +83,4 @@ def main():
     print("==========================")
 
 if __name__ == "__main__":
-    main()
+    app()
