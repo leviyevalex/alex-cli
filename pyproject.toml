@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alex-cli"
+version = "0.1.0"
+description = "My personal collection of CLI tools"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "cyclopts>=0.4",
+    "python-dotenv",
+    "google-generativeai",
+]
+
+[project.scripts]
+geminicli = "alex_cli.geminicli:app"
+pdfcli    = "alex_cli.pdfcli:app"
+notescli  = "alex_cli.notescli:app"
