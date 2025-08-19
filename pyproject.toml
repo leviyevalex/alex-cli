@@ -18,3 +18,4 @@ dependencies = [
 geminicli = "alex_cli.geminicli:app"
 pdfcli    = "alex_cli.pdfcli:app"
 notescli  = "alex_cli.notescli:app"
+pdf2gem = "alex_cli.pdf2gem:main"
